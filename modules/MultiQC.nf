@@ -1,6 +1,6 @@
 process MultiQC{
 
-    container 'multiqc/multiqc:latest'
+    conda 'bioconda::multiqc=1.35'
 
     input:
     path file_list

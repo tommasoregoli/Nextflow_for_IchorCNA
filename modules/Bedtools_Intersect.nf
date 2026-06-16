@@ -1,6 +1,6 @@
 process Bedtools_Intersect{
 
-    container 'community.wave.seqera.io/library/bedtools:2.31.1--efd79503b8c63422'
+    conda 'bioconda::bedtools=2.31.1'
 
     input:
     path BAM_file

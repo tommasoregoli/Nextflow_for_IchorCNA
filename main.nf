@@ -60,20 +60,20 @@ workflow{
     fifth_output = MultiQC.out
 }
 
-output{
+output {
     first_output {
-         path "results/${Cram2BAM.name}"
+         path "Cram2BAM"
     }
     second_output {
-         path "results/${Bedtools_Intersect.name}"
+         path "Bedtools_Intersect"
     }
     third_output {
-         path "results/${Samtools_index.name}"
+         path "Samtools_index"
     }
     fourth_output {
-         path "results/${Final_Report.name}"
+         path "Final_Report"
     }
     fifth_output {
-         path "results/${MultiQC.name}"
+         path "MultiQC"
     }
 }

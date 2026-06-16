@@ -1,6 +1,6 @@
 process Final_Report{
 
-    container 'ubuntu:latest'
+    conda 'conda-forge::gawk=5.3.0'
 
     input:
     tuple val(Nome_BAM), path(Numero_letture_BAM), path(Statistiche_coverage_raw_BAM)

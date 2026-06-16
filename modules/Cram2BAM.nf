@@ -1,6 +1,6 @@
 process Cram2BAM{
 
-    container 'community.wave.seqera.io/library/samtools:1.23.1--e8c68bc6da750dc8'
+    conda 'bioconda::samtools=1.23.1'
 
     input:
     path Cram_file
