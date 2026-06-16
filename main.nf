@@ -4,8 +4,9 @@
 include { Bedtools_Intersect } from './modules/Bedtools_Intersect.nf'
 include { Cram2BAM } from './modules/Cram2BAM.nf'
 include { Samtools_index } from './modules/Samtools_index.nf'
-include { Stats_BAM } from './modules/Stats_BAM.nf'
 include { Stats_offtarget_BAM } from './modules/Stats_offtarget_BAM.nf'
+include { SamtoolsStats_BAM } from './modules/SamtoolsStats_BAM.nf'
+include { SamtoolsStats_offtarget_BAM } from './modules/SamtoolsStats_offtarget_BAM.nf'
 include { Final_Report } from './modules/Final_Report.nf'
 include { MultiQC } from './modules/MultiQC.nf'
 
@@ -41,17 +42,19 @@ workflow{
     Samtools_index(Bedtools_Intersect.out)
 
     //Eseguo le statistiche sul file BAM ottenuto da Cram2BAM
-     Stats_BAM(Cram2BAM.out)
+    SamtoolsStats_BAM(Cram2BAM.out)
 
     //Eseguo le statistiche sul file BAM_offtarget ottenuto da Bedtools intersect
+    SamtoolsStats_offtarget_BAM(Bedtools_Intersect.out)
+
     Stats_offtarget_BAM(Bedtools_Intersect.out)
 
     //Eseguo il report finale con le statistiche ottenute da Stats_BAM
     Final_Report(Stats_offtarget_BAM.out)
 
     //Eseguo MultiQC per ottenere un report generale sui file BAM ottenuti da Bedtools intersect
-    Canale_MultiQC = Stats_BAM.out.mix(Stats_offtarget_BAM.out)
-                                  .map { _baseName, stats_file, coverage_file -> [ stats_file, coverage_file ] }                    
+    Canale_MultiQC = SamtoolsStats_BAM.out.mix(SamtoolsStats_offtarget_BAM.out)
+                                  .flatten()                   
                                   .collect()
     
     MultiQC(Canale_MultiQC)
