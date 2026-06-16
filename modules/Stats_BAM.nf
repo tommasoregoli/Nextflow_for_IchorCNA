@@ -14,5 +14,4 @@ process Stats_BAM{
 
     samtools coverage ${BAM_file} > ${BAM_file.baseName}_coverage_raw.txt
     """
-
 }
