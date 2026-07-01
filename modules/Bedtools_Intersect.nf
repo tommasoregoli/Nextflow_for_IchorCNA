@@ -16,5 +16,4 @@ process Bedtools_Intersect{
       -b ${Bed_file} \
       > ${BAM_file.baseName}_offtarget.bam
     """
-
 }

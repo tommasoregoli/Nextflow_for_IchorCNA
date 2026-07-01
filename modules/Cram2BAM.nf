@@ -14,5 +14,4 @@ process Cram2BAM{
     """
     samtools view -b -T ${Reference_genome} ${Cram_file} > ${Cram_file.baseName}.bam
     """
-
 }

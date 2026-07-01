@@ -1,16 +1,15 @@
-process Mosdepth_BAM{
+process Mosdepth_BAM {
 
     conda 'bioconda::mosdepth=0.3.14'
 
     input:
-    path BAM_file
+    tuple path(bam), path(bam_bai)
 
     output:
-    tuple path("${BAM_file.baseName}.mosdepth.global.dist.txt"), path("${BAM_file.baseName}.mosdepth.summary.txt")
+    tuple path("${bam.baseName}.mosdepth.global.dist.txt"), path("${bam.baseName}.mosdepth.summary.txt")
 
     script:
     """
-    mosdepth -n ${BAM_file.baseName} ${BAM_file}
+    mosdepth -n ${bam.baseName} ${bam}
     """
-
 }

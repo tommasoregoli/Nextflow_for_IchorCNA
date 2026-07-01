@@ -5,9 +5,7 @@ include { Bedtools_Intersect } from './modules/Bedtools_Intersect.nf'
 include { Cram2BAM } from './modules/Cram2BAM.nf'
 include { Samtools_index } from './modules/Samtools_index.nf'
 include { SamtoolsStats_BAM } from './modules/SamtoolsStats_BAM.nf'
-include { SamtoolsStats_offtarget_BAM } from './modules/SamtoolsStats_offtarget_BAM.nf'
 include { Mosdepth_BAM } from './modules/Mosdepth_BAM.nf'
-include { Mosdepth_offtarget_BAM } from './modules/Mosdepth_offtarget_BAM.nf'
 include { MultiQC } from './modules/MultiQC.nf'
 
 
@@ -39,23 +37,21 @@ workflow{
     //Eseguo Bedtools intersect per ogni file Bam che inserisco
     Bedtools_Intersect(Cram2BAM.out, params.bed)
 
+    channel_for_indexing = Bedtools_Intersect.out.mix(Cram2BAM.out)
+
     //Eseguo l'indicizzazione del file BAM ottenuto da Bedtools intersect
-    Samtools_index(Bedtools_Intersect.out)
+    Samtools_index(channel_for_indexing)
+
+    channel_for_stats = Bedtools_Intersect.out.mix(Cram2BAM.out)
 
     //Ricavo le statistiche del file BAM ottenuto da Cram2BAM con Samtools
-    SamtoolsStats_BAM(Cram2BAM.out)
+    SamtoolsStats_BAM(channel_for_stats)
 
     //Ricavo le statistiche del file BAM ottenuto da Cram2BAM con Mosdepth
-    Mosdepth_BAM(Cram2BAM.out) 
-
-    //Eseguo le statistiche sul file BAM_offtarget ottenuto da Bedtools intersect
-    SamtoolsStats_offtarget_BAM(Bedtools_Intersect.out)
-
-    //Ricavo le statistiche del file off_target_BAM ottenuto da Cram2BAM con Mosdepth
-    Mosdepth_offtarget_BAM(Bedtools_Intersect.out)
+    Mosdepth_BAM(Samtools_index.out) 
 
     //Eseguo MultiQC per ottenere un report generale sui file BAM ottenuti da Bedtools intersect
-    Canale_MultiQC = SamtoolsStats_BAM.out.mix(SamtoolsStats_offtarget_BAM.out, Mosdepth_BAM.out, Mosdepth_offtarget_BAM.out)
+    Canale_MultiQC = SamtoolsStats_BAM.out.mix(Mosdepth_BAM.out)
                                   .flatten()                   
                                   .collect()
     
@@ -65,8 +61,8 @@ workflow{
     first_output = Cram2BAM.out
     second_output = Bedtools_Intersect.out
     third_output = Samtools_index.out
-    fourth_output = Mosdepth_BAM.out
-    fifth_output = Mosdepth_offtarget_BAM.out
+    fourth_output = SamtoolsStats_BAM.out 
+    fifth_output = Mosdepth_BAM.out
     sixth_output = MultiQC.out
 
 }
@@ -82,12 +78,12 @@ output {
          path "Samtools_index"
     }
     fourth_output {
-         path "Mosdepth_BAM"
+         path "SamtoolsStats_BAM"
     }
     fifth_output {
-         path "Mosdepth_offtarget_BAM"
+         path "Mosdepth_BAM"
     }
-    sixth_output {
-         path "MultiQC"
+     sixth_output {
+           path "MultiQC"
     }
 }

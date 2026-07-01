@@ -12,5 +12,4 @@ process MultiQC{
     """
     multiqc . -o multiqc_report
     """
-
 }
