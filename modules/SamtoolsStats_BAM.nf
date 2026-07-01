@@ -6,7 +6,7 @@ process SamtoolsStats_BAM{
     path BAM_file
 
     output:
-    tuple path("${BAM_file.baseName}_stats.txt"), path("${BAM_file.baseName}_flagstat.txt"), path("${BAM_file.baseName}_coverage.txt")
+    tuple path("${BAM_file.baseName}_stats.txt"), path("${BAM_file.baseName}_flagstat.txt")
 
     script:
     """
@@ -16,7 +16,5 @@ process SamtoolsStats_BAM{
     # Genera il riepilogo dei flag (ottimo per vedere mappate/non mappate/duplicati)
     samtools flagstat ${BAM_file} > ${BAM_file.baseName}_flagstat.txt
 
-    # 3. Percentuale di copertura
-    samtools coverage ${BAM_file} > ${BAM_file.baseName}_coverage.txt
     """
 }
