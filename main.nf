@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 
-
+include { BED_Slop_and_Merge } from './modules/BED_Slop_and_Merge.nf'
 include { Bedtools_Intersect } from './modules/Bedtools_Intersect.nf'
 include { Cram2BAM } from './modules/Cram2BAM.nf'
 include { Samtools_index } from './modules/Samtools_index.nf'
@@ -13,7 +13,8 @@ include { MultiQC } from './modules/MultiQC.nf'
 /*
 Pipeline Parameters
 */
-params{
+params {
+	slop: Integer
     bed: Path
     CRAM: Path
     reference: Path
@@ -34,8 +35,17 @@ workflow{
     //Converto il file CRAM in BAM
     Cram2BAM(Canale, params.reference, params.reference_index)
     
-    //Eseguo Bedtools intersect per ogni file Bam che inserisco
-    Bedtools_Intersect(Cram2BAM.out, params.bed)
+
+	if (params.BED_Slop_and_Merge) {
+		//Eseguo Bedtools slop e merge sul file BED che inserisco solo se lo dichiaro true da terminale con il parametro --BED_Slop_and_Merge true
+		BED_Slop_and_Merge(params.reference_index, params.bed, params.slop)
+
+		Bedtools_Intersect(Cram2BAM.out, BED_Slop_and_Merge.out)
+	}
+	else {
+    	//Eseguo Bedtools intersect normalmente usano il file bed di default indicato nel file nextflow.config
+   		Bedtools_Intersect(Cram2BAM.out, params.bed)
+	}
 
     channel_for_indexing = Bedtools_Intersect.out.mix(Cram2BAM.out)
 
