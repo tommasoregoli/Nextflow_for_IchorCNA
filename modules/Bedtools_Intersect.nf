@@ -7,7 +7,7 @@ process Bedtools_Intersect{
     path Bed_file
 
     output:
-    tuple path("${BAM_file.baseName}_offtarget.bam"), path (Bed_file)
+    path("${BAM_file.baseName}_offtarget.bam")
 
     script:
     """

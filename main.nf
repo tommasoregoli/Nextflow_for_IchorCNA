@@ -74,6 +74,7 @@ workflow{
     fourth_output = SamtoolsStats_BAM.out 
     fifth_output = Mosdepth_BAM.out
     sixth_output = MultiQC.out
+    seventh_output = BED_Slop_and_Merge.out
 
 }
 
@@ -95,5 +96,8 @@ output {
     }
      sixth_output {
            path "MultiQC"
+    }
+    seventh_output {
+          path "BED_Slop_and_Merge"
     }
 }
