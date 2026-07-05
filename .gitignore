@@ -1,0 +1,13 @@
+# File di log di Nextflow (e le loro vecchie versioni .log.1, .log.2, ecc.)
+.nextflow.log*
+
+# Cartella nascosta della cronologia e cache di Nextflow
+.nextflow/
+
+# LA CARTELLA PIÙ IMPORTANTE: contiene i dati temporanei dei calcoli.
+# Non deve MAI andare su GitHub perché può pesare Gigabyte o Terabyte!
+work/
+
+# File di sistema generici da ignorare (opzionali ma utili)
+.DS_Store
+Thumbs.db
