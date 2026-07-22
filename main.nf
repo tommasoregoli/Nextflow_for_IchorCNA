@@ -70,7 +70,7 @@ workflow{
     publish:
     first_output = Cram2BAM.out
     second_output = Bedtools_Intersect.out
-    third_output = Samtools_index.out
+    third_output = Samtools_index.out.map { _bam, bai -> bai } 
     fourth_output = SamtoolsStats_BAM.out 
     fifth_output = Mosdepth_BAM.out
     sixth_output = MultiQC.out
@@ -81,23 +81,30 @@ workflow{
 output {
     first_output {
          path "Cram2BAM"
+		 mode 'copy'
     }
     second_output {
          path "Bedtools_Intersect"
+		 mode 'copy'
     }
     third_output {
          path "Samtools_index"
+		 mode 'copy'
     }
     fourth_output {
          path "SamtoolsStats_BAM"
+		 mode 'copy'
     }
     fifth_output {
          path "Mosdepth_BAM"
+		 mode 'copy'
     }
      sixth_output {
            path "MultiQC"
+		   mode 'copy'
     }
     seventh_output {
           path "BED_Slop_and_Merge"
+		  mode 'copy'
     }
 }
