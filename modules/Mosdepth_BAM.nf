@@ -10,6 +10,6 @@ process Mosdepth_BAM {
 
     script:
     """
-    mosdepth -n ${bam.baseName} ${bam}
+    mosdepth -n -F 1024 -Q 20 ${bam.baseName} ${bam}
     """
 }
