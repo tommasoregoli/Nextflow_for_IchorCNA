@@ -1,110 +1,108 @@
 #!/usr/bin/env nextflow
-
-include { BED_Slop_and_Merge } from './modules/BED_Slop_and_Merge.nf'
-include { Bedtools_Intersect } from './modules/Bedtools_Intersect.nf'
-include { Cram2BAM } from './modules/Cram2BAM.nf'
-include { Samtools_index } from './modules/Samtools_index.nf'
-include { SamtoolsStats_BAM } from './modules/SamtoolsStats_BAM.nf'
-include { Mosdepth_BAM } from './modules/Mosdepth_BAM.nf'
-include { MultiQC } from './modules/MultiQC.nf'
-
-
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    nf-core/nextflow_for_ichorcna
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    Github : https://github.com/nf-core/nextflow_for_ichorcna
+----------------------------------------------------------------------------------------
+*/
 
 /*
-Pipeline Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    IMPORT FUNCTIONS / MODULES / SUBWORKFLOWS / WORKFLOWS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-params {
-	slop: Integer
-    bed: Path
-    CRAM: Path
-    reference: Path
-    reference_index: Path
-}
 
+include { NEXTFLOW_FOR_ICHORCNA  } from './workflows/nextflow_for_ichorcna'
+include { PIPELINE_INITIALISATION } from './subworkflows/local/utils_nfcore_nextflow_for_ichorcna_pipeline'
+include { PIPELINE_COMPLETION     } from './subworkflows/local/utils_nfcore_nextflow_for_ichorcna_pipeline'
+include { getGenomeAttribute      } from './subworkflows/local/utils_nfcore_nextflow_for_ichorcna_pipeline'
 
 /*
-Workflow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    GENOME PARAMETER VALUES
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-workflow{
-    
+
+// TODO nf-core: Remove this line if you don't need a FASTA file
+//   This is an example of how to use getGenomeAttribute() to fetch parameters
+//   from igenomes.config using `--genome`
+params.fasta = getGenomeAttribute('fasta')
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    NAMED WORKFLOWS FOR PIPELINE
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+//
+// WORKFLOW: Run main analysis pipeline depending on type of input
+//
+workflow NFCORE_NEXTFLOW_FOR_ICHORCNA {
+
+    take:
+    samplesheet // channel: samplesheet read in from --input
+
     main:
-    //Creo il canale che mi prende in ingresso i file BAM che scriverò in un csv
-    Canale = channel.fromPath(params.CRAM)
-                    .splitCsv()
-    
-    //Converto il file CRAM in BAM
-    Cram2BAM(Canale, params.reference, params.reference_index)
-    
 
-	if (params.BED_Slop_and_Merge) {
-		//Eseguo Bedtools slop e merge sul file BED che inserisco solo se lo dichiaro true da terminale con il parametro --BED_Slop_and_Merge true
-		BED_Slop_and_Merge(params.reference_index, params.bed, params.slop)
+    //
+    // WORKFLOW: Run pipeline
+    //
+    NEXTFLOW_FOR_ICHORCNA (
+        samplesheet,
+        params.multiqc_config,
+        params.multiqc_logo,
+        params.multiqc_methods_description,
+        params.outdir,
+    )
+    emit:
+    multiqc_report = NEXTFLOW_FOR_ICHORCNA.out.multiqc_report // channel: /path/to/multiqc_report.html
+}
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    RUN MAIN WORKFLOW
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
 
-		Bedtools_Intersect(Cram2BAM.out, BED_Slop_and_Merge.out)
-	}
-	else {
-    	//Eseguo Bedtools intersect normalmente usano il file bed di default indicato nel file nextflow.config
-   		Bedtools_Intersect(Cram2BAM.out, params.bed)
-	}
+workflow {
 
-    channel_for_indexing = Bedtools_Intersect.out.mix(Cram2BAM.out)
+    main:
+    //
+    // SUBWORKFLOW: Run initialisation tasks
+    //
+    PIPELINE_INITIALISATION (
+        params.version,
+        params.validate_params,
+        params.monochrome_logs,
+        args,
+        params.outdir,
+        params.input,
+        params.help,
+        params.help_full,
+        params.show_hidden
+    )
 
-    //Eseguo l'indicizzazione del file BAM ottenuto da Bedtools intersect
-    Samtools_index(channel_for_indexing)
-
-    channel_for_stats = Bedtools_Intersect.out.mix(Cram2BAM.out)
-
-    //Ricavo le statistiche del file BAM ottenuto da Cram2BAM con Samtools
-    SamtoolsStats_BAM(channel_for_stats)
-
-    //Ricavo le statistiche del file BAM ottenuto da Cram2BAM con Mosdepth
-    Mosdepth_BAM(Samtools_index.out) 
-
-    //Eseguo MultiQC per ottenere un report generale sui file BAM ottenuti da Bedtools intersect
-    Canale_MultiQC = SamtoolsStats_BAM.out.mix(Mosdepth_BAM.out)
-                                  .flatten()                   
-                                  .collect()
-    
-    MultiQC(Canale_MultiQC)
-
-    publish:
-    first_output = Cram2BAM.out
-    second_output = Bedtools_Intersect.out
-    third_output = Samtools_index.out.map { _bam, bai -> bai } 
-    fourth_output = SamtoolsStats_BAM.out 
-    fifth_output = Mosdepth_BAM.out
-    sixth_output = MultiQC.out
-    seventh_output = BED_Slop_and_Merge.out
-
+    //
+    // WORKFLOW: Run main workflow
+    //
+    NFCORE_NEXTFLOW_FOR_ICHORCNA (
+        PIPELINE_INITIALISATION.out.samplesheet
+    )
+    //
+    // SUBWORKFLOW: Run completion tasks
+    //
+    PIPELINE_COMPLETION (
+        params.email,
+        params.email_on_fail,
+        params.plaintext_email,
+        params.outdir,
+        params.monochrome_logs,
+        NFCORE_NEXTFLOW_FOR_ICHORCNA.out.multiqc_report
+    )
 }
 
-output {
-    first_output {
-         path "Cram2BAM"
-		 mode 'copy'
-    }
-    second_output {
-         path "Bedtools_Intersect"
-		 mode 'copy'
-    }
-    third_output {
-         path "Samtools_index"
-		 mode 'copy'
-    }
-    fourth_output {
-         path "SamtoolsStats_BAM"
-		 mode 'copy'
-    }
-    fifth_output {
-         path "Mosdepth_BAM"
-		 mode 'copy'
-    }
-     sixth_output {
-           path "MultiQC"
-		   mode 'copy'
-    }
-    seventh_output {
-          path "BED_Slop_and_Merge"
-		  mode 'copy'
-    }
-}
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    THE END
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
