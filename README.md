@@ -1,3 +1,6 @@
+
+![Pipeline](Media/Pipeline Nextflow for IchorCNA.jpg)
+
 # Nextflow_for_IchorCNA
 Nextflow Pipeline per Analisi Off-Target e QC (IchorCNA Prep)
 
