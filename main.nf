@@ -28,39 +28,38 @@ Workflow
 workflow{
     
     main:
-    //Creo il canale che mi prende in ingresso i file BAM che scriverò in un csv
+    //Program creates the channel that takes the CRAM files as input from the samples.csv file
     Canale = channel.fromPath(params.CRAM)
                     .splitCsv()
     
-    //Converto il file CRAM in BAM
+    //Convert CRAM file to BAM file
     Cram2BAM(Canale, params.reference, params.reference_index)
     
-
+    //The program runs Bedtools slop and merge on the BED file only if parameter --BED_Slop_and_Merge is setted as true in the nextflow command
 	if (params.BED_Slop_and_Merge) {
-		//Eseguo Bedtools slop e merge sul file BED che inserisco solo se lo dichiaro true da terminale con il parametro --BED_Slop_and_Merge true
 		BED_Slop_and_Merge(params.reference_index, params.bed, params.slop)
 
 		Bedtools_Intersect(Cram2BAM.out, BED_Slop_and_Merge.out)
 	}
 	else {
-    	//Eseguo Bedtools intersect normalmente usano il file bed di default indicato nel file nextflow.config
+    	//Program runs Bedtools intersect with default bed file in nextflow.config
    		Bedtools_Intersect(Cram2BAM.out, params.bed)
 	}
 
     channel_for_indexing = Bedtools_Intersect.out.mix(Cram2BAM.out)
 
-    //Eseguo l'indicizzazione del file BAM ottenuto da Bedtools intersect
+    //The program indexes the BAM file obtained from Bedtools intersect
     Samtools_index(channel_for_indexing)
 
     channel_for_stats = Bedtools_Intersect.out.mix(Cram2BAM.out)
 
-    //Ricavo le statistiche del file BAM ottenuto da Cram2BAM con Samtools
+    //The program evaluates the statistics of the BAM file obtained from Cram2BAM using Samtools
     SamtoolsStats_BAM(channel_for_stats)
 
-    //Ricavo le statistiche del file BAM ottenuto da Cram2BAM con Mosdepth
+    //The program evaluates the statistics of the BAM file obtained from Cram2BAM using Mosdepth
     Mosdepth_BAM(Samtools_index.out) 
 
-    //Eseguo MultiQC per ottenere un report generale sui file BAM ottenuti da Bedtools intersect
+    //The program runs MultiQC to generate a summary report on the normal and off-target BAM files 
     Canale_MultiQC = SamtoolsStats_BAM.out.mix(Mosdepth_BAM.out)
                                   .flatten()                   
                                   .collect()
