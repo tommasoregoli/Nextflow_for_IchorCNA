@@ -2,26 +2,25 @@
 ![Pipeline](<Media/Pipeline Nextflow for IchorCNA.jpg>)
 
 # Nextflow_for_IchorCNA
-Nextflow Pipeline per Analisi Off-Target e QC (IchorCNA Prep)
+Nextflow Pipeline for Off-Target Analysis and QC (IchorCNA Prep)
 
-Questa pipeline basata su Nextflow è progettata per processare file CRAM, convertirli in BAM, estrarre le *reads* off-target rispetto a un file BED di riferimento (utilizzando `bedtools`) ed eseguire un controllo qualità completo (QC) tramite `samtools`, `mosdepth` e `MultiQC`.
-
-La pipeline include una funzionalità opzionale per allargare (slop) e unire (merge) dinamicamente le regioni del file BED prima dell'intersezione.
-
----
-
-## 📦 Prerequisiti
-
-Per eseguire la pipeline sul tuo sistema, assicurati di avere:
-
-* **Nextflow** (versione aggiornata, che supporti la sintassi `output {}` e il resource limits)
-* **Docker** o un gestore di ambienti (come Conda). La pipeline è configurata di default con `docker.enabled = true` e `wave.enabled = true`.
+This Nextflow-based pipeline is designed to process CRAM files, convert them to BAM, extract off-target reads with respect to a reference BED file (using `bedtools`) and perform comprehensive quality control (QC) using `samtools`, `mosdepth` e `MultiQC`.
+The pipeline includes an optional feature to dynamically expand (slop) and merge (merge) the regions of the BED file before intersection.
 
 ---
 
-## 🚀 Utilizzo Rapido
+## 📦 Prerequisites
 
-Esecuzione standard (utilizzando il file BED di default così com'è):
+To run the pipeline on your system, make sure you have:
+
+* **Nextflow** (an up-to-date version supporting the output {} syntax and resource limits)
+* **Docker** or an environment manager (such as Conda). The pipeline is configured by default with `docker.enabled = true` e `wave.enabled = true`.
+
+---
+
+## 🚀 Quick Usage
+
+Standard execution (using the default BED file as it is):
 
 ```bash
 nextflow run main.nf \
@@ -33,8 +32,8 @@ nextflow run main.nf \
 
 ```
 
-**Esecuzione con Allargamento del BED (Slop & Merge):**
-Se desideri allargare le regioni del file BED prima dell'intersezione, devi attivare il modulo condizionale e specificare il numero di paia di basi (bp):
+**Execution with BED Expansion (Slop & Merge):**
+If you want to expand the BED regions before the intersection, you must enable the conditional module and specify the number of base pairs (bp):
 
 ```bash
 nextflow run main.nf \
@@ -49,58 +48,58 @@ nextflow run main.nf \
 ```
 ---
 
-## ⚙️ Parametri della Pipeline
+## ⚙️ Pipeline Parameters
 
-Tutti i parametri possono essere modificati nel file `nextflow.config` o passati da riga di comando con il prefisso `--`.
+All parameters can be modified in the `nextflow.config` file or passed from the command line using the `--` prefix.
 
-| Parametro | Descrizione | Valore di Default |
+| Parameter | Description | Default Value |
 | --- | --- | --- |
-| `outdir` | Cartella in cui verranno salvati i risultati finali. | `./results` |
-| `publish_dir_mode` | Metodo di pubblicazione dei file di output (es. `copy`, `symlink`). | `copy` |
-| `CRAM` | File CSV contenente i percorsi dei file CRAM di input. | `./samples.csv` |
-| `bed` | Percorso del file BED di riferimento per l'intersezione. | `PATH/of/your/BED/file` |
-| `reference` | Genoma di riferimento in formato FASTA. | `PATH/of/your/reference/...` |
-| `reference_index` | Indice del genoma di riferimento (`.fai`). | `PATH/of/your/reference/index` |
-| `BED_Slop_and_Merge` | **Flag booleano**. Se impostato a `true`, esegue il modulo di slop/merge sul file BED prima dell'intersezione. | `false` |
-| `slop` | Numero di basi (bp) per allargare le regioni del BED. Viene usato solo se `BED_Slop_and_Merge` è `true`. | `0` |
+| `outdir` | Directory where the final results will be saved. | `./results` |
+| `publish_dir_mode` | Method used to publish output files (e.g., `copy`, `symlink`). | `copy` |
+| `CRAM` | CSV file containing the paths to the input CRAM files. | `./samples.csv` |
+| `bed` | Path to the reference BED file used for the intersection. | `PATH/of/your/BED/file` |
+| `reference` | Reference genome in FASTA format. | `PATH/of/your/reference/...` |
+| `reference_index` | Reference genome index (`.fai`). | `PATH/of/your/reference/index` |
+| `BED_Slop_and_Merge` | **Boolean Flag**. If set to true, runs the slop/merge module on the BED file before the intersection. | `false` |
+| `slop` | Number of bases (bp) by which to expand the BED regions. Used only if `BED_Slop_and_Merge` is `true`. | `0` |
 
 ---
 
 
-## 🧩 Moduli della Pipeline
+## 🧩 Pipeline Modules
 
-La pipeline è modulare e utilizza i seguenti processi:
+The pipeline is modular and uses the following processes:
 
-* **`Cram2BAM`**: Converte i file in input dal formato CRAM al formato BAM utilizzando `samtools view`.
-* **`BED_Slop_and_Merge` (*Opzionale*)**: Viene eseguito solo se esplicitamente richiesto. Utilizza il reference_index per trovare le dimensioni dei cromosomi del genoma di riferimento indicato, prende il file BED in input, ne allarga i confini usando `bedtools slop` in base al parametro `--slop` e unisce le regioni sovrapposte con `bedtools merge`.
-* **`Bedtools_Intersect`**: Identifica e trattiene solo le reads off-target (parametro `-v`). Interseca i file BAM generati con il file BED originale o, se attivato, con il file BED modificato dallo step precedente.
-* **`Samtools_index`**: Genera l'indice (`.bai`) sia per i BAM completi che per quelli risultanti dall'intersezione.
-* **`SamtoolsStats_BAM`**: Genera le statistiche generali e i flag (mappate, non mappate, duplicati) tramite `samtools stats` e `samtools flagstat`.
-* **`Mosdepth_BAM`**: Calcola la profondità di copertura (depth) in modo ultra-veloce partendo dai BAM indicizzati.
-* **`MultiQC`**: Raccoglie tutti i log e le statistiche generati nei passaggi precedenti (Samtools e Mosdepth) compilandoli in un unico report interattivo HTML.
-
----
-
-## 💻 Risorse e Configurazione Hardware
-
-La pipeline è configurata con limiti di risorse di sicurezza per evitare di saturare i cluster o il PC locale.
-
-Nel file `nextflow.config` è possibile gestire i profili hardware:
-
-* **Default Process**: Ogni job richiede 6 CPU e 4 GB di RAM.
-* **Resource Limits**: Nessun job supererà mai le 12 CPU, 24 GB di RAM o 96 ore di tempo, proteggendo il sistema da crash dovuti a processi fuori controllo.
-
-Leggere il file nextflow.config per crearsi un proprio risorse_pc.config da richiamare al momento dell'esecuzione della pipeline
+* **`Cram2BAM`**: Converts input files from CRAM format to BAM format using `samtools view`.
+* **`BED_Slop_and_Merge` (*Optional*)**: Runs only if explicitly requested. It uses the reference_index to determine the chromosome sizes of the specified reference genome, takes the BED file as input, expands its boundaries using `bedtools slop` according to the `--slop` parameter, and merges overlapping regions using `bedtools merge`.
+* **`Bedtools_Intersect`**: Identifies and retains only the off-target reads (-v parameter). It intersects the generated BAM files with the original BED file or, if enabled, with the BED file modified by the previous step.
+* **`Samtools_index`**: Generates the index (`.bai`) for both the complete BAM files and those resulting from the intersection.
+* **`SamtoolsStats_BAM`**: Generates general statistics and flags (mapped, unmapped, duplicates) using `samtools stats` and `samtools flagstat`.
+* **`Mosdepth_BAM`**: Calculates coverage depth in an ultra-fast manner starting from indexed BAM files.
+* **`MultiQC`**: Collects all logs and statistics generated in the previous steps (Samtools e Mosdepth) and compiles them into a single interactive HTML report.
 
 ---
 
-## 📁 Struttura dell'Output
+## 💻 Resources and Hardware Configuration
 
-I risultati finali saranno organizzati nella directory specificata da `--outdir` secondo il blocco `output` integrato (feature DSL2 moderna). Troverai i file raggruppati nelle seguenti sottocartelle:
+The pipeline is configured with low-to-moderate resource limits; users are encouraged to modify the parameters according to their specific hardware limitations.
 
-* `Cram2BAM/` : File `.bam` completi convertiti.
-* `Bedtools_Intersect/` : File `.bam` off-target generati dall'intersezione.
-* `Samtools_index/` : Indici `.bai` associati ai BAM.
-* `SamtoolsStats_BAM/` : File di testo con log `.stats` e `.flagstat`.
-* `Mosdepth_BAM/` : Distribuzioni e riepiloghi globali prodotti da mosdepth.
-* `MultiQC/` : Report HTML unificato pronto da visualizzare nel browser.
+Hardware profiles can be managed in the `nextflow.config` file:
+
+* **Default Process**: Each process is assigned 2 CPUs and 4 GB of RAM.
+* **Resource Limits**: No process will ever exceed 12 CPUs, 24 GB of RAM, or 96 hours of execution time.
+
+Read the 'nextflow.config' file to create your own 'risorse_pc.config' file to be specified when running the pipeline.
+
+---
+
+## 📁 Output Structure
+
+The final results will be organized in the directory specified by `--outdir` according to the integrated `output` block. The files will be grouped into the following subdirectories:
+
+* `Cram2BAM/` : Converted complete `.bam` files.
+* `Bedtools_Intersect/` : Off-target `.bam` files generated by the intersection.
+* `Samtools_index/` : `.bai` index files associated with the BAM files.
+* `SamtoolsStats_BAM/` : Text files containing `.stats` and `.flagstat` logs.
+* `Mosdepth_BAM/` : Distributions and global summaries produced by mosdepth.
+* `MultiQC/` : Unified HTML report ready to be viewed in a browser.
