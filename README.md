@@ -4,7 +4,7 @@
 # Nextflow_for_IchorCNA
 Nextflow Pipeline for Off-Target Analysis and QC (IchorCNA Prep)
 
-This Nextflow-based pipeline is designed to process CRAM files, convert them to BAM, extract off-target reads with respect to a reference BED file (using `bedtools`) and perform comprehensive quality control (QC) using `samtools`, `mosdepth` e `MultiQC`.
+This Nextflow-based pipeline is designed to process CRAM files, convert them to BAM, extract off-target reads with respect to a reference BED file (using `bedtools`) and perform comprehensive quality control (QC) using `samtools`, `mosdepth` and `MultiQC`.
 The pipeline includes an optional feature to dynamically expand (slop) and merge (merge) the regions of the BED file before intersection.
 
 ---
@@ -14,7 +14,7 @@ The pipeline includes an optional feature to dynamically expand (slop) and merge
 To run the pipeline on your system, make sure you have:
 
 * **Nextflow** (an up-to-date version supporting the output {} syntax and resource limits)
-* **Docker** or an environment manager (such as Conda). The pipeline is configured by default with `docker.enabled = true` e `wave.enabled = true`.
+* **Docker** or an environment manager (such as Conda). The pipeline is configured by default with `docker.enabled = true` and `wave.enabled = true`.
 
 ---
 
@@ -57,9 +57,9 @@ All parameters can be modified in the `nextflow.config` file or passed from the 
 | `outdir` | Directory where the final results will be saved. | `./results` |
 | `publish_dir_mode` | Method used to publish output files (e.g., `copy`, `symlink`). | `copy` |
 | `CRAM` | CSV file containing the paths to the input CRAM files. | `./samples.csv` |
-| `bed` | Path to the reference BED file used for the intersection. | `PATH/of/your/BED/file` |
-| `reference` | Reference genome in FASTA format. | `PATH/of/your/reference/...` |
-| `reference_index` | Reference genome index (`.fai`). | `PATH/of/your/reference/index` |
+| `bed` | Path to the reference BED file used for the intersection. | `PATH/to/your/BED/file` |
+| `reference` | Reference genome in FASTA format. | `PATH/to/your/reference/...` |
+| `reference_index` | Reference genome index (`.fai`). | `PATH/to/your/reference/index` |
 | `BED_Slop_and_Merge` | **Boolean Flag**. If set to true, runs the slop/merge module on the BED file before the intersection. | `false` |
 | `slop` | Number of bases (bp) by which to expand the BED regions. Used only if `BED_Slop_and_Merge` is `true`. | `0` |
 
@@ -72,17 +72,17 @@ The pipeline is modular and uses the following processes:
 
 * **`Cram2BAM`**: Converts input files from CRAM format to BAM format using `samtools view`.
 * **`BED_Slop_and_Merge` (*Optional*)**: Runs only if explicitly requested. It uses the reference_index to determine the chromosome sizes of the specified reference genome, takes the BED file as input, expands its boundaries using `bedtools slop` according to the `--slop` parameter, and merges overlapping regions using `bedtools merge`.
-* **`Bedtools_Intersect`**: Identifies and retains only the off-target reads (-v parameter). It intersects the generated BAM files with the original BED file or, if enabled, with the BED file modified by the previous step.
+* **`Bedtools_Intersect`**: Identifies and retains only the off-target reads. It intersects the generated BAM files with the original BED file or, if enabled, with the BED file modified by the previous step.
 * **`Samtools_index`**: Generates the index (`.bai`) for both the complete BAM files and those resulting from the intersection.
 * **`SamtoolsStats_BAM`**: Generates general statistics and flags (mapped, unmapped, duplicates) using `samtools stats` and `samtools flagstat`.
 * **`Mosdepth_BAM`**: Calculates coverage depth in an ultra-fast manner starting from indexed BAM files.
-* **`MultiQC`**: Collects all logs and statistics generated in the previous steps (Samtools e Mosdepth) and compiles them into a single interactive HTML report.
+* **`MultiQC`**: Collects all logs and statistics generated in the previous steps (Samtools and Mosdepth) and compiles them into a single interactive HTML report.
 
 ---
 
 ## 💻 Resources and Hardware Configuration
 
-The pipeline is configured with low-to-moderate resource limits; users are encouraged to modify the parameters according to their specific hardware limitations.
+The pipeline is configured with low-to-moderate resource limits, users are encouraged to modify the parameters according to their specific hardware limitations.
 
 Hardware profiles can be managed in the `nextflow.config` file:
 
